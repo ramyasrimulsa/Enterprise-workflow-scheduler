@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .section {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 12px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover { background-color: #0056b3; }
+        .btn-delete { background-color: #dc3545; }
+        .btn-delete:hover { background-color: #bd2130; }
+        .task-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status {
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Workflow Scheduler</h1>
+
+    <!-- 1. Metrics Area -->
+    <div class="section">
+        <h3>Metrics Overview</h3>
+        <p id="metrics-summary">Loading dashboard analytics...</p>
+    </div>
+
+    <!-- 2. Creation Form -->
+    <div class="section">
+        <h3>Add New Task</h3>
+        <form id="task-form">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="form-title" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="form-desc"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="form-date" required>
+            </div>
+            <div class="form-group">
+                <label>Time</label>
+                <input type="time" id="form-time" required>
+            </div>
+            <button type="submit">Add Task</button>
+        </form>
+    </div>
+
+    <!-- 3. Task Display Pipeline -->
+    <div class="section">
+        <h3>Task Registry</h3>
+        <div id="tasks-container">Loading workflow registry...</div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+    });
+
+    async function loadData() {
+        await Promise.all([renderMetrics(), renderTasks()]);
+    }
+
+    async function renderMetrics() {
+        var res = await fetch('/api/metrics');
+        var stats = await res.json();
+        document.getElementById('metrics-summary').innerText = 
+            'Total: ' + stats.total + ' | Pending: ' + stats.pending + ' | In Progress: ' + stats.progress + ' | Completed: ' + stats.completed + ' (' + stats.percent + '%)';
+    }
+
+    async function renderTasks() {
+        var res = await fetch('/api/tasks');
+        var tasks = await res.json();
+        var container = document.getElementById('tasks-container');
+        
+        if (tasks.length === 0) {
+            container.innerHTML = '<p>No tasks scheduled.</p>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < tasks.length; i++) {
+            var t = tasks[i];
+            
+            var actionButtons = '';
+            if (t.status === 'Pending') {
+                actionButtons += '<button onclick="changeStatus(' + t.id + ', \'In Progress\')">Start</button>';
+                actionButtons += '<button onclick="changeStatus(' + t.id + ', \'Completed\')">Done</button>';
+            } else if (t.status === 'In Progress') {
+                actionButtons += '<button onclick="changeStatus(' + t.id + ', \'Completed\')">Complete</button>';
+            }
+
+            html += '<div class="task-item">' +
+                '<div>' +
+                    '<strong>' + t.title + '</strong> (' + t.schedule_time + ')<br>' +
+                    '<small>' + (t.description || 'No description.') + '</small><br>' +
+                    '<span class="status">Status: ' + t.status + '</span>' +
+                '</div>' +
+                '<div>' +
+                    actionButtons +
+                    '<button class="btn-delete" onclick="deleteTask(' + t.id + ')">Delete</button>' +
+                '</div>' +
+            '</div>';
+        }
+        container.innerHTML = html;
+    }
+
+    document.getElementById('task-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var payload = {
+            title: document.getElementById('form-title').value,
+            description: document.getElementById('form-desc').value,
+            date: document.getElementById('form-date').value,
+            time: document.getElementById('form-time').value
+        };
+
+        await fetch('/api/tasks', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        document.getElementById('task-form').reset();
+        loadData();
+    });
+
+    async function changeStatus(id, newStatus) {
+        await fetch('/api/tasks/' + id + '/status', {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: newStatus})
+        });
+        loadData();
+    }
+
+    async function deleteTask(id) {
+        if (confirm('Delete task #' + id + '?')) {
+            await fetch('/api/tasks/' + id, { method: 'DELETE' });
+            loadData();
+        }
+    }
+</script>
+</body>
+</html>
