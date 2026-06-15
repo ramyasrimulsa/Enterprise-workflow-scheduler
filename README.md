@@ -13,8 +13,7 @@ The application follows a modular architecture pattern that separates the user i
 ### 🔄 Data Flow Diagram
 Below is the structural layout showing how data travels through the application files:
 
-![System Architecture Diagram](assets/system_architecture.png) 
-*(Note: Replace 'architecture_blocks.png' with your actual architecture image filename after uploading it to your repo)*
+![System Architecture Diagram](assets/system-architecture.png) 
 
 1. **User Browser**: The client interface where you interact with tasks and view analytics dashboards.
 2. **templates/**: Houses the visual HTML/Jinja2 files that render the front-end forms and task status cards.
