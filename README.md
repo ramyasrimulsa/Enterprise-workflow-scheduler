@@ -28,7 +28,7 @@ Below is the structural layout showing how data travels through the application 
 
 The dashboard features a live **Metrics Overview** tracker, an **Add New Task** configuration manager, and an interactive **Task Registry** with status control buttons.
 
-![Application Interface Screenshot](ui_screenshot.png)
+![Application Interface Screenshot](assets/index.png)
 *(Note: Replace 'ui_screenshot.png' with your actual dashboard screenshot filename after uploading it to your repo)*
 
 ---
